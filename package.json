@@ -1,0 +1,109 @@
+{
+    "name": "metalevel-references",
+    "displayName": "Metalevel References",
+    "description": "Find All References at file and folder level",
+    "version": "0.1.0",
+    "author": {
+        "name": "Maik Riechert",
+        "url": "https://github.com/letmaik"
+    },
+    "publisher": "letmaik",
+    "license": "MIT",
+    "icon": "resources/logo.png",
+    "categories": [
+        "Other"
+    ],
+    "keywords": [
+        "file",
+        "folder",
+        "symbol",
+        "aggregate",
+        "group"
+    ],
+    "bugs": {
+        "url": "https://github.com/letmaik/vscode-metalevel-references/issues"
+    },
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/letmaik/vscode-metalevel-references.git"
+    },
+    "homepage": "https://github.com/letmaik/vscode-metalevel-references",
+    "engines": {
+        "vscode": "^1.27.0"
+    },
+    "activationEvents": [
+        "onCommand:metalevelReferences.findReferencesByFile",
+        "onCommand:metalevelReferences.findReferencesByFolder"
+    ],
+    "main": "./out/src/extension",
+    "contributes": {
+        "views": {
+            "explorer": [
+                {
+                    "id": "metalevelReferences",
+                    "name": "Metalevel References"
+                }
+            ]
+        },
+        "commands": [
+            {
+                "command": "metalevelReferences.findReferencesByFile",
+                "title": "Find All References of File",
+                "category": "Metalevel References"
+            },
+            {
+                "command": "metalevelReferences.findReferencesByFolder",
+                "title": "Find All References of Folder",
+                "category": "Metalevel References"
+            },
+            {
+                "command": "metalevelReferences.openFile",
+                "title": "Open File",
+                "category": "Metalevel References"
+            }
+        ],
+        "menus": {
+            "explorer/context": [
+                {
+                    "command": "metalevelReferences.findReferencesByFile",
+                    "when": "!explorerResourceIsFolder"
+                },
+                {
+                    "command": "metalevelReferences.findReferencesByFolder",
+                    "when": "explorerResourceIsFolder"
+                }
+            ],
+            "view/item/context": [
+                {
+                    "command": "metalevelReferences.openFile",
+                    "when": "view == metalevelReferences && viewItem == file"
+                },
+                {
+                    "command": "metalevelReferences.openFile",
+                    "when": "view == metalevelReferences && viewItem == source"
+                },
+                {
+                    "command": "metalevelReferences.findReferencesByFile",
+                    "when": "view == metalevelReferences && viewItem == file"
+                },
+                {
+                    "command": "metalevelReferences.findReferencesByFolder",
+                    "when": "view == metalevelReferences && viewItem == folder"
+                }
+            ]
+        }
+    },
+    "scripts": {
+        "vscode:prepublish": "tsc -p ./",
+        "compile": "tsc -watch -p ./",
+        "postinstall": "node ./node_modules/vscode/bin/install"
+    },
+    "devDependencies": {
+        "typescript": "^2.3.4",
+        "vscode": "^1.1.0",
+        "@types/node": "^7.0.4"
+    },
+    "dependencies": {
+        "common-path-prefix": "^1.0.0"
+    }
+}
