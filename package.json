@@ -2,7 +2,7 @@
     "name": "metalevel-references",
     "displayName": "Metalevel References",
     "description": "Find All References at file and folder level",
-    "version": "0.1.0",
+    "version": "0.1.1",
     "author": {
         "name": "Maik Riechert",
         "url": "https://github.com/letmaik"

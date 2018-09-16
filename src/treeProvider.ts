@@ -108,7 +108,7 @@ export class ReferenceTreeDataProvider implements TreeDataProvider<Element>, Dis
                 promise.then(fileSymbolReferences => {
                     for (let symbolReferences of fileSymbolReferences) {
                         let symbolExternalReferences = symbolReferences.filterUri(
-                            symRefUri => !symRefUri.path.startsWith(uri.path))
+                            symRefUri => !symRefUri.path.startsWith(uri.path + '/'))
                         if (symbolExternalReferences.references.length > 0) {
                             folderSymbolReferences.push(symbolExternalReferences)
                         }
@@ -164,7 +164,8 @@ export class ReferenceTreeDataProvider implements TreeDataProvider<Element>, Dis
             let short = filesShort[i]
             let references = referencesByFile.get(file)!
             let symbolEls = references.map(([symbol,range]) => 
-                new SymbolReferenceElement(`Line ${range.start.line+1}: ${symbol.name}`, uri, range, symbol.kind))
+                new SymbolReferenceElement(`Line ${range.start.line+1}: ${symbol.name}`,
+                    uri, range, symbol.kind))
             let fileEl = new FileElement(short, uri, symbolEls)
             sourceChildren.push(fileEl)
         }
@@ -248,7 +249,10 @@ export class ReferenceTreeDataProvider implements TreeDataProvider<Element>, Dis
         }
         let document = await workspace.openTextDocument(uri)
         let text = document.getText(range)
-        let symbolOffsetInRange = text.indexOf(symbol.name)
+        // Some symbol providers (e.g. C#) always return the full canonical name,
+        // however the source code nearly always contains the simple name.
+        let simpleName = getSimpleSymbolName(symbol.name)
+        let symbolOffsetInRange = text.indexOf(simpleName)
         if (symbolOffsetInRange === -1) {
             let error = new Error(`Symbol name "${symbol.name}" not found in symbol range ` +
                 `[${range.start.line}:${range.start.character}, ${range.end.line}:${range.end.character}] ` +
@@ -271,6 +275,10 @@ export class ReferenceTreeDataProvider implements TreeDataProvider<Element>, Dis
     dispose(): void {
         this.disposables.forEach(d => d.dispose());
     }
+}
+
+function getSimpleSymbolName(name: string): string {
+    return name.split('.').slice(-1)[0]
 }
 
 // "Method" is not included as this often is an inherited/interface method
