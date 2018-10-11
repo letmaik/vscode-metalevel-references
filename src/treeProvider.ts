@@ -249,23 +249,22 @@ export class ReferenceTreeDataProvider implements TreeDataProvider<Element>, Dis
         }
         let document = await workspace.openTextDocument(uri)
         let text = document.getText(range)
-        // Some symbol providers (e.g. C#) always return the full canonical name,
-        // however the source code nearly always contains the simple name.
         let simpleName = getSimpleSymbolName(symbol.name)
         let symbolOffsetInRange = text.indexOf(simpleName)
         if (symbolOffsetInRange === -1) {
-            let error = new Error(`Symbol name "${symbol.name}" not found in symbol range ` +
-                `[${range.start.line}:${range.start.character}, ${range.end.line}:${range.end.character}] ` +
+            let error = new Error(`Symbol name "${simpleName}" (original: "${symbol.name}") not found in symbol range ` +
+                `[${range.start.line+1}:${range.start.character+1}, ${range.end.line+1}:${range.end.character+1}] ` +
                 `in ${uri.fsPath}`)
             this.symbolReferencesCache.set(cacheKey, error)
             throw error
         }
         let rangeOffset = document.offsetAt(range.start)
         let position = document.positionAt(rangeOffset + symbolOffsetInRange)
-        this.log(`Fetching references for "${symbol.name}" at ${position.line}:${position.character} in ${uri.fsPath}`)
+        this.log(`Fetching references for "${simpleName}" (original: "${symbol.name}") ` +
+            `at ${position.line+1}:${position.character+1} in ${uri.fsPath}`)
         let result = await commands.executeCommand('vscode.executeReferenceProvider', uri, position)
         if (!result) {
-            throw new Error(`Could not retrieve symbol references for "${symbol.name}" in ${uri.fsPath}`)
+            throw new Error(`Could not retrieve symbol references for "${simpleName}" in ${uri.fsPath}`)
         }
         let references = result as Location[]
         this.symbolReferencesCache.set(cacheKey, references)
@@ -278,7 +277,15 @@ export class ReferenceTreeDataProvider implements TreeDataProvider<Element>, Dis
 }
 
 function getSimpleSymbolName(name: string): string {
-    return name.split('.').slice(-1)[0]
+    // C# provider always returns the full canonical name,
+    // however the source code nearly always contains the simple name.
+    name = name.split('.').slice(-1)[0]
+
+    // C++ provider includes part of the function signature,
+    // but we only want the function name. 
+    name = name.split('(')[0]
+
+    return name
 }
 
 // "Method" is not included as this often is an inherited/interface method
