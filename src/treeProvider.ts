@@ -5,7 +5,8 @@ import * as commonPathPrefix from 'common-path-prefix'
 import { TreeDataProvider, TreeItem, TreeItemCollapsibleState,
          Uri,  Disposable, EventEmitter, Event, TextDocumentShowOptions,
          ProgressLocation, OutputChannel,
-         workspace, commands, SymbolInformation, Location, SymbolKind, FileType, Range, window  } from 'vscode'
+         workspace, commands, SymbolInformation, DocumentSymbol, 
+         Location, SymbolKind, FileType, Range, window  } from 'vscode'
 
 class SourceElement {
     constructor(public label: string, public uri: Uri, public children: (FolderElement|FileElement)[]) {}
@@ -194,7 +195,10 @@ export class ReferenceTreeDataProvider implements TreeDataProvider<Element>, Dis
     async getFileSymbolReferences(uri: Uri): Promise<SymbolReferences[]> {
         let symbols = await this.getFileSymbols(uri)
         let importantSymbols = getImportantSymbols(symbols)
-        this.log(`${symbols.length} (filtered: ${importantSymbols.length}) symbols retrieved for ${uri.fsPath}`)
+        this.log(`${symbols.length} (after filter: ${importantSymbols.length}) symbols retrieved for ${uri.fsPath}`)
+        if (importantSymbols.length === 0) {
+            this.log(`Unfiltered symbols: ${symbols.map(s => `${s.name} [${SymbolKind[s.kind]}]`)}`)
+        }
         let promises = importantSymbols.map(async symbol => 
                 new SymbolReferences(symbol, await this.getSymbolReferences(symbol)))
         let fileSymbolReferences: SymbolReferences[] = []
@@ -228,9 +232,23 @@ export class ReferenceTreeDataProvider implements TreeDataProvider<Element>, Dis
         if (!result) {
             throw new Error(`Could not retrieve symbols for ${file.fsPath}`)
         }
-        let symbols = result as SymbolInformation[]
-        this.symbolCache.set(cacheKey, symbols)
-        return symbols
+        const symbols = result as SymbolInformation[] | DocumentSymbol[]
+        let symInfos: SymbolInformation[]
+        if (symbols.length && 'children' in symbols[0]) {
+            const todo = symbols as DocumentSymbol[]
+            symInfos = new Array<SymbolInformation>()
+            while (todo.length) {
+                const symbol = todo.pop() as DocumentSymbol
+                const location = new Location(file, symbol.selectionRange)
+                const symInfo = new SymbolInformation(symbol.name, symbol.kind, '', location)
+                symInfos.push(symInfo)
+                todo.unshift(...symbol.children)
+            }
+        } else {
+            symInfos = symbols as SymbolInformation[]
+        }
+        this.symbolCache.set(cacheKey, symInfos)
+        return symInfos
     }
 
     symbolReferencesCache = new Map<string,(Location[]|Error)>()
